@@ -22633,14 +22633,16 @@ server.resource("graphql-schema", new URL(env.ENDPOINT).href, async (uri) => {
   }
 });
 server.tool("introspect-schema", "Introspect the GraphQL schema, use this tool before doing a query to get the schema information if you do not have it available as a resource already.", {
-  __ignore__: exports_external.boolean().default(false).describe("This does not do anything")
-}, async () => {
+  __ignore__: exports_external.boolean().default(false).describe("This does not do anything"),
+  headers: exports_external.record(exports_external.string(), exports_external.string()).optional().default({}).describe("Additional headers to merge with environment HEADERS")
+}, async ({ __ignore__, headers }) => {
+  const requestHeaders = { ...env.HEADERS, ...headers };
   try {
     let schema;
     if (env.SCHEMA) {
       schema = await introspectLocalSchema(env.SCHEMA);
     } else {
-      schema = await introspectEndpoint(env.ENDPOINT, env.HEADERS);
+      schema = await introspectEndpoint(env.ENDPOINT, requestHeaders);
     }
     return {
       content: [
@@ -22664,8 +22666,9 @@ server.tool("introspect-schema", "Introspect the GraphQL schema, use this tool b
 });
 server.tool("query-graphql", "Query a GraphQL endpoint with the given query and variables", {
   query: exports_external.string(),
-  variables: exports_external.string().optional()
-}, async ({ query, variables }) => {
+  variables: exports_external.string().optional(),
+  headers: exports_external.record(exports_external.string(), exports_external.string()).optional().default({}).describe("Additional headers to merge with environment HEADERS")
+}, async ({ query, variables, headers }) => {
   try {
     const parsedQuery = parse(query);
     const isMutation = parsedQuery.definitions.some((def) => def.kind === "OperationDefinition" && def.operation === "mutation");
@@ -22696,7 +22699,8 @@ server.tool("query-graphql", "Query a GraphQL endpoint with the given query and 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...env.HEADERS
+        ...env.HEADERS,
+        ...headers
       },
       body: JSON.stringify({
         query,
@@ -22743,8 +22747,9 @@ ${responseText}`
 if (env.ALLOW_MUTATIONS) {
   server.tool("mutation-graphql", "Execute a GraphQL mutation against the endpoint", {
     mutation: exports_external.string(),
-    variables: exports_external.string().optional()
-  }, async ({ mutation, variables }) => {
+    variables: exports_external.string().optional(),
+    headers: exports_external.record(exports_external.string(), exports_external.string()).optional().default({}).describe("Additional headers to merge with environment HEADERS")
+  }, async ({ mutation, variables, headers }) => {
     try {
       const parsedMutation = parse(mutation);
       const isMutationOp = parsedMutation.definitions.some((def) => def.kind === "OperationDefinition" && def.operation === "mutation");
@@ -22775,7 +22780,8 @@ if (env.ALLOW_MUTATIONS) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...env.HEADERS
+          ...env.HEADERS,
+          ...headers
         },
         body: JSON.stringify({ query: mutation, variables })
       });

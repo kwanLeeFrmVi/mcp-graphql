@@ -72,12 +72,14 @@ npx mcp-graphql [<args>…]
 
 The server provides two main tools:
 
-1. **introspect-schema**: This tool retrieves the GraphQL schema. Use this first if you don't have access to the schema as a resource.
-This uses either the local schema file or an introspection query.
+1. **introspect-schema**: Retrieve the GraphQL schema using either the local schema file or an introspection query.
+   You can pass an optional `headers` argument (a JSON object) to include additional HTTP headers for this request.
 
 2. **query-graphql**: Execute GraphQL queries against the endpoint. By default, mutations are disabled unless `ALLOW_MUTATIONS` is set to `true`.
+   You can pass an optional `headers` argument (a JSON object) to include additional HTTP headers for this request.
 
 3. **mutation-graphql**: Execute GraphQL mutation operations against the endpoint. Requires `ALLOW_MUTATIONS` to be enabled.
+   You can pass an optional `headers` argument (a JSON object) to include additional HTTP headers for this request.
 
 ## Installation
 

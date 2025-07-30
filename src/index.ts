@@ -67,53 +67,64 @@ server.resource("graphql-schema", new URL(env.ENDPOINT).href, async (uri) => {
 server.tool(
 	"introspect-schema",
 	"Introspect the GraphQL schema, use this tool before doing a query to get the schema information if you do not have it available as a resource already.",
-	{
-		// This is a workaround to help clients that can't handle an empty object as an argument
-		// They will often send undefined instead of an empty object which is not allowed by the schema
-		__ignore__: z
-			.boolean()
-			.default(false)
-			.describe("This does not do anything"),
-	},
-	async () => {
-		try {
-			let schema: string;
-			if (env.SCHEMA) {
-				schema = await introspectLocalSchema(env.SCHEMA);
-			} else {
-				schema = await introspectEndpoint(env.ENDPOINT, env.HEADERS);
-			}
+   {
+       // Workaround to help clients that can't handle an empty object as an argument.
+       // They will often send undefined instead of an empty object which is not allowed by the schema.
+       __ignore__: z
+           .boolean()
+           .default(false)
+           .describe("This does not do anything"),
+       headers: z
+           .record(z.string(), z.string())
+           .optional()
+           .default({})
+           .describe("Additional headers to merge with environment HEADERS"),
+   },
+   async ({ __ignore__, headers }) => {
+       const requestHeaders = { ...env.HEADERS, ...headers };
+       try {
+           let schema: string;
+           if (env.SCHEMA) {
+               schema = await introspectLocalSchema(env.SCHEMA);
+           } else {
+               schema = await introspectEndpoint(env.ENDPOINT, requestHeaders);
+           }
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: schema,
-					},
-				],
-			};
-		} catch (error) {
-			return {
-				isError: true,
-				content: [
-					{
-						type: "text",
-						text: `Failed to introspect schema: ${error}`,
-					},
-				],
-			};
-		}
-	},
+           return {
+               content: [
+                   {
+                       type: "text",
+                       text: schema,
+                   },
+               ],
+           };
+       } catch (error) {
+           return {
+               isError: true,
+               content: [
+                   {
+                       type: "text",
+                       text: `Failed to introspect schema: ${error}`,
+                   },
+               ],
+           };
+       }
+   },
 );
 
 server.tool(
 	"query-graphql",
 	"Query a GraphQL endpoint with the given query and variables",
-	{
-		query: z.string(),
-		variables: z.string().optional(),
-	},
-	async ({ query, variables }) => {
+   {
+       query: z.string(),
+       variables: z.string().optional(),
+       headers: z
+           .record(z.string(), z.string())
+           .optional()
+           .default({})
+           .describe("Additional headers to merge with environment HEADERS"),
+   },
+   async ({ query, variables, headers }) => {
 		try {
 			const parsedQuery = parse(query);
 
@@ -146,18 +157,19 @@ server.tool(
 			};
 		}
 
-		try {
-			const response = await fetch(env.ENDPOINT, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					...env.HEADERS,
-				},
-				body: JSON.stringify({
-					query,
-					variables,
-				}),
-			});
+       try {
+           const response = await fetch(env.ENDPOINT, {
+               method: "POST",
+               headers: {
+                   "Content-Type": "application/json",
+                   ...env.HEADERS,
+                   ...headers,
+               },
+               body: JSON.stringify({
+                   query,
+                   variables,
+               }),
+           });
 
 			if (!response.ok) {
 				const responseText = await response.text();
@@ -211,11 +223,16 @@ if (env.ALLOW_MUTATIONS) {
 	server.tool(
 		"mutation-graphql",
 		"Execute a GraphQL mutation against the endpoint",
-		{
-			mutation: z.string(),
-			variables: z.string().optional(),
-		},
-		async ({ mutation, variables }) => {
+    {
+       mutation: z.string(),
+       variables: z.string().optional(),
+       headers: z
+           .record(z.string(), z.string())
+           .optional()
+           .default({})
+           .describe("Additional headers to merge with environment HEADERS"),
+    },
+    async ({ mutation, variables, headers }) => {
 			try {
 				const parsedMutation = parse(mutation);
 				const isMutationOp = parsedMutation.definitions.some(
@@ -245,15 +262,16 @@ if (env.ALLOW_MUTATIONS) {
 				};
 			}
 
-			try {
-				const response = await fetch(env.ENDPOINT, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						...env.HEADERS,
-					},
-					body: JSON.stringify({ query: mutation, variables }),
-				});
+       try {
+           const response = await fetch(env.ENDPOINT, {
+               method: "POST",
+               headers: {
+                   "Content-Type": "application/json",
+                   ...env.HEADERS,
+                   ...headers,
+               },
+               body: JSON.stringify({ query: mutation, variables }),
+           });
 
 				if (!response.ok) {
 					const responseText = await response.text();
