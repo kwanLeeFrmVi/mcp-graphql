@@ -118,7 +118,6 @@ out
 # Nuxt.js build / generate output
 
 .nuxt
-dist
 
 # Gatsby files
 
@@ -174,7 +173,6 @@ dist
 # Finder (MacOS) folder config
 .DS_Store
 
-dist/
 
 # GraphQL schema for debugging
 /schema.graphql

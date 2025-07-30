@@ -38,9 +38,9 @@ ENDPOINT=http://localhost:3000/graphql ALLOW_MUTATIONS=true npx mcp-graphql
 ENDPOINT=http://localhost:3000/graphql SCHEMA=./schema.graphql npx mcp-graphql
 ```
 
-### Running via npx directly from GitHub
+### Running via npx or bunx directly from GitHub
 
-You can also invoke this package via npx directly from the GitHub repository without publishing to npm:
+You can also invoke this package via npx (or bunx) directly from the GitHub repository without publishing to npm:
 
 ```bash
 # Using the SSH URL
@@ -52,6 +52,7 @@ npx github:kwanLeeFrmVi/mcp-graphql [<args>…]
 # Using GitHub HTTPS shorthand (specify branch or tag)
 npx github:kwanLeeFrmVi/mcp-graphql#main [<args>…]
 ```
+> **bunx note:** Bun’s remote invocation does not run the `prepare`/build step, so the binary may not be generated when calling via `bunx github:…`. If you see “could not determine executable to run for package,” use the manual clone/build workflow or invoke with `npx` instead (which runs the `prepare` hook).
 > **Note:** Because this repository does not ship pre-built `dist/` files, the bin executable won’t exist until the code is compiled.
 > A `prepare` script is now included (requires Bun or a compatible Node toolchain) to build on-the-fly. If you see “command not found” for `mcp-graphql`, either install Bun so the hook runs successfully, or clone & build manually:
 
