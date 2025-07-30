@@ -206,6 +206,101 @@ server.tool(
 	},
 );
 
+// Register a dedicated tool for executing GraphQL mutations when allowed
+if (env.ALLOW_MUTATIONS) {
+	server.tool(
+		"mutation-graphql",
+		"Execute a GraphQL mutation against the endpoint",
+		{
+			mutation: z.string(),
+			variables: z.string().optional(),
+		},
+		async ({ mutation, variables }) => {
+			try {
+				const parsedMutation = parse(mutation);
+				const isMutationOp = parsedMutation.definitions.some(
+					(def) =>
+						def.kind === "OperationDefinition" && def.operation === "mutation"
+				);
+				if (!isMutationOp) {
+					return {
+						isError: true,
+						content: [
+							{
+								type: "text",
+								text: "Only mutation operations are allowed with this tool. Please provide a valid GraphQL mutation.",
+							},
+						],
+					};
+				}
+			} catch (error) {
+				return {
+					isError: true,
+					content: [
+						{
+							type: "text",
+							text: `Invalid GraphQL mutation: ${error}`,
+						},
+					],
+				};
+			}
+
+			try {
+				const response = await fetch(env.ENDPOINT, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						...env.HEADERS,
+					},
+					body: JSON.stringify({ query: mutation, variables }),
+				});
+
+				if (!response.ok) {
+					const responseText = await response.text();
+
+					return {
+						isError: true,
+						content: [
+							{
+								type: "text",
+								text: `GraphQL mutation failed: ${response.statusText}\n${responseText}`,
+							},
+						],
+					};
+				}
+
+				const data = await response.json();
+				if (data.errors && data.errors.length > 0) {
+					return {
+						isError: true,
+						content: [
+							{
+								type: "text",
+								text: `The GraphQL mutation response has errors: ${JSON.stringify(
+									data,
+									null,
+									2
+								)}`,
+							},
+						],
+					};
+				}
+
+				return {
+					content: [
+						{
+							type: "text",
+							text: JSON.stringify(data, null, 2),
+						},
+					],
+				};
+			} catch (error) {
+				throw new Error(`Failed to execute GraphQL mutation: ${error}`);
+			}
+		}
+	);
+}
+
 async function main() {
 	const transport = new StdioServerTransport();
 	await server.connect(transport);

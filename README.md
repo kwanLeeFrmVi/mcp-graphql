@@ -51,6 +51,8 @@ This uses either the local schema file or an introspection query.
 
 2. **query-graphql**: Execute GraphQL queries against the endpoint. By default, mutations are disabled unless `ALLOW_MUTATIONS` is set to `true`.
 
+3. **mutation-graphql**: Execute GraphQL mutation operations against the endpoint. Requires `ALLOW_MUTATIONS` to be enabled.
+
 ## Installation
 
 ### Installing via Smithery
