@@ -38,6 +38,31 @@ ENDPOINT=http://localhost:3000/graphql ALLOW_MUTATIONS=true npx mcp-graphql
 ENDPOINT=http://localhost:3000/graphql SCHEMA=./schema.graphql npx mcp-graphql
 ```
 
+### Running via npx directly from GitHub
+
+You can also invoke this package via npx directly from the GitHub repository without publishing to npm:
+
+```bash
+# Using the SSH URL
+npx git+ssh://git@github.com/kwanLeeFrmVi/mcp-graphql.git [<args>…]
+# Using the HTTPS URL
+npx git+https://github.com/kwanLeeFrmVi/mcp-graphql.git [<args>…]
+# Using GitHub SSH shorthand
+npx github:kwanLeeFrmVi/mcp-graphql [<args>…]
+# Using GitHub HTTPS shorthand (specify branch or tag)
+npx github:kwanLeeFrmVi/mcp-graphql#main [<args>…]
+```
+> **Note:** Because this repository does not ship pre-built `dist/` files, the bin executable won’t exist until the code is compiled.
+> A `prepare` script is now included (requires Bun or a compatible Node toolchain) to build on-the-fly. If you see “command not found” for `mcp-graphql`, either install Bun so the hook runs successfully, or clone & build manually:
+
+```bash
+git clone git@github.com/kwanLeeFrmVi/mcp-graphql.git
+cd mcp-graphql
+npm install       # or bun install
+npm run build
+npx mcp-graphql [<args>…]
+```
+
 ## Resources
 
 - **graphql-schema**: The server exposes the GraphQL schema as a resource that clients can access. This is either the local schema file or based on an introspection query.
