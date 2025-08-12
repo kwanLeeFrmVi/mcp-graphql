@@ -154,10 +154,10 @@ server.tool(
    {
        query: z.string(),
        variables: z
-           .string()
+           .union([z.string(), z.record(z.string(), z.any())])
            .optional()
            .describe(
-               "JSON-encoded string of GraphQL variables. Do NOT pass an object. Example: '{\"limit\": 5}', '{\"input\": {\"name\": \"Alice\"}}'. Match schema types (e.g., use 5.0 for Float). Omit if no variables."
+               "GraphQL variables. Prefer an object; strings will be JSON-parsed for backward compatibility. Match schema types (e.g., use 5.0 for Float). Omit if no variables."
            ),
        headers: z
            .record(z.string(), z.string())
@@ -199,6 +199,26 @@ server.tool(
 		}
 
        try {
+           let normalizedVariables: any;
+           try {
+               normalizedVariables =
+                   variables === undefined
+                       ? undefined
+                       : typeof variables === "string"
+                           ? JSON.parse(variables)
+                           : variables;
+           } catch (e) {
+               return {
+                   isError: true,
+                   content: [
+                       {
+                           type: "text",
+                           text: `Invalid variables: ${e}`,
+                       },
+                   ],
+               };
+           }
+
            const response = await fetch(env.ENDPOINT, {
                method: "POST",
                headers: {
@@ -208,7 +228,7 @@ server.tool(
                },
                body: JSON.stringify({
                    query,
-                   variables: variables ? JSON.parse(variables) : undefined,
+                   variables: normalizedVariables,
                }),
            });
 
@@ -267,10 +287,10 @@ if (env.ALLOW_MUTATIONS) {
     {
        mutation: z.string(),
        variables: z
-           .string()
+           .union([z.string(), z.record(z.string(), z.any())])
            .optional()
            .describe(
-               "JSON-encoded string of GraphQL variables. Do NOT pass an object. Example: '{\"id\": \"123\"}', '{\"input\": {\"name\": \"Alice\", \"age\": 30}}'. Match schema types (e.g., use 5.0 for Float). Omit if no variables."
+               "GraphQL variables. Prefer an object; strings will be JSON-parsed for backward compatibility. Match schema types (e.g., use 5.0 for Float). Omit if no variables."
            ),
        headers: z
            .record(z.string(), z.string())
@@ -309,6 +329,26 @@ if (env.ALLOW_MUTATIONS) {
 			}
 
        try {
+           let normalizedVariables: any;
+           try {
+               normalizedVariables =
+                   variables === undefined
+                       ? undefined
+                       : typeof variables === "string"
+                           ? JSON.parse(variables)
+                           : variables;
+           } catch (e) {
+               return {
+                   isError: true,
+                   content: [
+                       {
+                           type: "text",
+                           text: `Invalid variables: ${e}`,
+                       },
+                   ],
+               };
+           }
+
            const response = await fetch(env.ENDPOINT, {
                method: "POST",
                headers: {
@@ -316,7 +356,7 @@ if (env.ALLOW_MUTATIONS) {
                    ...env.HEADERS,
                    ...headers,
                },
-               body: JSON.stringify({ query: mutation, variables }),
+               body: JSON.stringify({ query: mutation, variables: normalizedVariables }),
            });
 
 				if (!response.ok) {

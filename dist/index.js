@@ -20855,7 +20855,7 @@ server.tool("introspect-schema", "Introspect the GraphQL schema, use this tool b
 });
 server.tool("query-graphql", "Query a GraphQL endpoint with the given query and variables", {
   query: exports_external.string(),
-  variables: exports_external.string().optional().describe(`JSON-encoded string of GraphQL variables. Do NOT pass an object. Example: '{"limit": 5}', '{"input": {"name": "Alice"}}'. Match schema types (e.g., use 5.0 for Float). Omit if no variables.`),
+  variables: exports_external.union([exports_external.string(), exports_external.record(exports_external.string(), exports_external.any())]).optional().describe("GraphQL variables. Prefer an object; strings will be JSON-parsed for backward compatibility. Match schema types (e.g., use 5.0 for Float). Omit if no variables."),
   headers: exports_external.record(exports_external.string(), exports_external.string()).optional().default({}).describe("Additional headers to merge with environment HEADERS")
 }, async ({ query, variables, headers }) => {
   try {
@@ -20884,6 +20884,20 @@ server.tool("query-graphql", "Query a GraphQL endpoint with the given query and 
     };
   }
   try {
+    let normalizedVariables;
+    try {
+      normalizedVariables = variables === undefined ? undefined : typeof variables === "string" ? JSON.parse(variables) : variables;
+    } catch (e) {
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: `Invalid variables: ${e}`
+          }
+        ]
+      };
+    }
     const response = await fetch(env.ENDPOINT, {
       method: "POST",
       headers: {
@@ -20893,7 +20907,7 @@ server.tool("query-graphql", "Query a GraphQL endpoint with the given query and 
       },
       body: JSON.stringify({
         query,
-        variables: variables ? JSON.parse(variables) : undefined
+        variables: normalizedVariables
       })
     });
     if (!response.ok) {
@@ -20936,7 +20950,7 @@ ${responseText}`
 if (env.ALLOW_MUTATIONS) {
   server.tool("mutation-graphql", "Execute a GraphQL mutation against the endpoint", {
     mutation: exports_external.string(),
-    variables: exports_external.string().optional().describe(`JSON-encoded string of GraphQL variables. Do NOT pass an object. Example: '{"id": "123"}', '{"input": {"name": "Alice", "age": 30}}'. Match schema types (e.g., use 5.0 for Float). Omit if no variables.`),
+    variables: exports_external.union([exports_external.string(), exports_external.record(exports_external.string(), exports_external.any())]).optional().describe("GraphQL variables. Prefer an object; strings will be JSON-parsed for backward compatibility. Match schema types (e.g., use 5.0 for Float). Omit if no variables."),
     headers: exports_external.record(exports_external.string(), exports_external.string()).optional().default({}).describe("Additional headers to merge with environment HEADERS")
   }, async ({ mutation, variables, headers }) => {
     try {
@@ -20965,6 +20979,20 @@ if (env.ALLOW_MUTATIONS) {
       };
     }
     try {
+      let normalizedVariables;
+      try {
+        normalizedVariables = variables === undefined ? undefined : typeof variables === "string" ? JSON.parse(variables) : variables;
+      } catch (e) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `Invalid variables: ${e}`
+            }
+          ]
+        };
+      }
       const response = await fetch(env.ENDPOINT, {
         method: "POST",
         headers: {
@@ -20972,7 +21000,7 @@ if (env.ALLOW_MUTATIONS) {
           ...env.HEADERS,
           ...headers
         },
-        body: JSON.stringify({ query: mutation, variables })
+        body: JSON.stringify({ query: mutation, variables: normalizedVariables })
       });
       if (!response.ok) {
         const responseText = await response.text();
