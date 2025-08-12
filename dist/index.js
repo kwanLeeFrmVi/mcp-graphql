@@ -20855,7 +20855,7 @@ server.tool("introspect-schema", "Introspect the GraphQL schema, use this tool b
 });
 server.tool("query-graphql", "Query a GraphQL endpoint with the given query and variables", {
   query: exports_external.string(),
-  variables: exports_external.string().optional(),
+  variables: exports_external.string().optional().describe(`JSON-encoded string of GraphQL variables. Do NOT pass an object. Example: '{"limit": 5}', '{"input": {"name": "Alice"}}'. Match schema types (e.g., use 5.0 for Float). Omit if no variables.`),
   headers: exports_external.record(exports_external.string(), exports_external.string()).optional().default({}).describe("Additional headers to merge with environment HEADERS")
 }, async ({ query, variables, headers }) => {
   try {
@@ -20936,7 +20936,7 @@ ${responseText}`
 if (env.ALLOW_MUTATIONS) {
   server.tool("mutation-graphql", "Execute a GraphQL mutation against the endpoint", {
     mutation: exports_external.string(),
-    variables: exports_external.string().optional(),
+    variables: exports_external.string().optional().describe(`JSON-encoded string of GraphQL variables. Do NOT pass an object. Example: '{"id": "123"}', '{"input": {"name": "Alice", "age": 30}}'. Match schema types (e.g., use 5.0 for Float). Omit if no variables.`),
     headers: exports_external.record(exports_external.string(), exports_external.string()).optional().default({}).describe("Additional headers to merge with environment HEADERS")
   }, async ({ mutation, variables, headers }) => {
     try {

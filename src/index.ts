@@ -153,7 +153,12 @@ server.tool(
 	"Query a GraphQL endpoint with the given query and variables",
    {
        query: z.string(),
-       variables: z.string().optional(),
+       variables: z
+           .string()
+           .optional()
+           .describe(
+               "JSON-encoded string of GraphQL variables. Do NOT pass an object. Example: '{\"limit\": 5}', '{\"input\": {\"name\": \"Alice\"}}'. Match schema types (e.g., use 5.0 for Float). Omit if no variables."
+           ),
        headers: z
            .record(z.string(), z.string())
            .optional()
@@ -261,7 +266,12 @@ if (env.ALLOW_MUTATIONS) {
 		"Execute a GraphQL mutation against the endpoint",
     {
        mutation: z.string(),
-       variables: z.string().optional(),
+       variables: z
+           .string()
+           .optional()
+           .describe(
+               "JSON-encoded string of GraphQL variables. Do NOT pass an object. Example: '{\"id\": \"123\"}', '{\"input\": {\"name\": \"Alice\", \"age\": 30}}'. Match schema types (e.g., use 5.0 for Float). Omit if no variables."
+           ),
        headers: z
            .record(z.string(), z.string())
            .optional()
