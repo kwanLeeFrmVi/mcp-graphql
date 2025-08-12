@@ -208,7 +208,7 @@ server.tool(
                },
                body: JSON.stringify({
                    query,
-                   variables,
+                   variables: variables ? JSON.parse(variables) : undefined,
                }),
            });
 

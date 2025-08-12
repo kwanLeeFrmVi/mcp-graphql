@@ -20893,7 +20893,7 @@ server.tool("query-graphql", "Query a GraphQL endpoint with the given query and 
       },
       body: JSON.stringify({
         query,
-        variables
+        variables: variables ? JSON.parse(variables) : undefined
       })
     });
     if (!response.ok) {
