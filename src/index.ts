@@ -2,7 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { parse } from "graphql/language";
+import { parse, print } from "graphql";
 import { z } from "zod";
 import { checkDeprecatedArguments } from "./helpers/deprecation.js";
 import {
@@ -70,17 +70,21 @@ server.tool(
    {
        // Workaround to help clients that can't handle an empty object as an argument.
        // They will often send undefined instead of an empty object which is not allowed by the schema.
-       __ignore__: z
-           .boolean()
-           .default(false)
-           .describe("This does not do anything"),
+       __ignore__: z.boolean().default(false).describe("This does not do anything"),
+       search: z.string().optional().describe(
+           "Filter schema definitions or fields by this substring"
+       ),
+       operationType: z
+           .enum(["Query", "Mutation", "Subscription"])
+           .optional()
+           .describe("Only show this root operation type"),
        headers: z
            .record(z.string(), z.string())
            .optional()
            .default({})
            .describe("Additional headers to merge with environment HEADERS"),
    },
-   async ({ __ignore__, headers }) => {
+   async ({ __ignore__, search, operationType, headers }) => {
        const requestHeaders = { ...env.HEADERS, ...headers };
        try {
            let schema: string;
@@ -90,11 +94,43 @@ server.tool(
                schema = await introspectEndpoint(env.ENDPOINT, requestHeaders);
            }
 
+           // Optionally filter the SDL by search substring or root operation type
+           let output = schema;
+           if (search || operationType) {
+               const doc = parse(schema);
+               if (operationType) {
+                   const opNode = doc.definitions.find(
+                       (d) =>
+                           d.kind === "ObjectTypeDefinition" &&
+                           d.name.value === operationType,
+                   );
+                   if (opNode && opNode.kind === "ObjectTypeDefinition") {
+                       let fields = opNode.fields ?? [];
+                       if (search) {
+                           fields = fields.filter((f) =>
+                               f.name.value.includes(search),
+                           );
+                       }
+                       output = print({ ...opNode, fields } as any);
+                   } else {
+                       output = "";
+                   }
+               } else if (search) {
+                   const defs = doc.definitions.filter(
+                       (d) =>
+                           d.kind === "ObjectTypeDefinition" &&
+                           (d.name.value.includes(search) ||
+                               (d.fields?.some((f) => f.name.value.includes(search)) ?? false)),
+                   );
+                   output = defs.map((d) => print(d as any)).join("\n\n");
+               }
+           }
+
            return {
                content: [
                    {
                        type: "text",
-                       text: schema,
+                       text: output,
                    },
                ],
            };
